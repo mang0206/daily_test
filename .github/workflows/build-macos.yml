@@ -1,0 +1,28 @@
+name: Build macOS App
+
+on:
+  workflow_dispatch:   # Actions 탭에서 수동으로 "Run workflow" 클릭해서 실행
+  push:
+    branches: [main]
+
+jobs:
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install PyInstaller
+        run: pip install pyinstaller
+
+      - name: Build app
+        run: pyinstaller --onefile --windowed --name VocabQuiz main.py
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: VocabQuiz-macOS
+          path: dist/VocabQuiz.app
