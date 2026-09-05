@@ -330,8 +330,16 @@ class QuizTab(ttk.Frame):
         # --- quiz screen ---
         self.quiz_frame = ttk.Frame(self)
 
-        self.progress_label = ttk.Label(self.quiz_frame, text="", font=("", 10))
-        self.progress_label.pack(pady=(15, 0))
+        top_bar = ttk.Frame(self.quiz_frame)
+        top_bar.pack(fill="x", padx=20, pady=(15, 0))
+
+        self.progress_label = ttk.Label(top_bar, text="", font=("", 10))
+        self.progress_label.pack(side="left")
+
+        self.finish_button = ttk.Button(
+            top_bar, text="Finish", command=self.confirm_finish
+        )
+        self.finish_button.pack(side="right")
 
         self.question_label = ttk.Label(
             self.quiz_frame, text="", wraplength=480, font=("", 12)
@@ -491,10 +499,17 @@ class QuizTab(ttk.Frame):
             self.show_button.config(state="disabled")
             self.next_button.config(state="normal")
         else:
-            # 틀려도 정답은 안 보여주고 다시 시도할 수 있게 둠
-            self.feedback_label.config(text="Incorrect, try again.", foreground="red")
+            # 틀려도 정답은 안 보여주고 다시 시도할 수 있게 둠.
+            # 같은 문구가 연달아 뜨면 안 바뀐 것처럼 보이니, 잠깐 지웠다가 다시 띄워서 눈에 띄게 함
+            self.feedback_label.config(text="")
             self.answer_entry.delete(0, tk.END)
             self.answer_entry.focus_set()
+            self.after(
+                60,
+                lambda: self.feedback_label.config(
+                    text="Incorrect, try again.", foreground="red"
+                ),
+            )
 
     def show_answer(self):
         if not self.questions or self.current_index >= len(self.questions):
@@ -516,10 +531,24 @@ class QuizTab(ttk.Frame):
         self.current_index += 1
         self._show_question()
 
-    def _show_results(self):
+    def confirm_finish(self):
+        if not self.questions or self.current_index >= len(self.questions):
+            return  # 이미 결과 화면이거나 문제가 없는 상태
+
+        if not messagebox.askyesno(
+            "Finish Quiz",
+            "Finish the quiz now? Unanswered questions won't count.",
+        ):
+            return
+
+        completed = self.current_index + (1 if self.answered else 0)
+        self._show_results(total=completed)
+
+    def _show_results(self, total=None):
         self.quiz_frame.pack_forget()
 
-        total = len(self.questions)
+        if total is None:
+            total = len(self.questions)
         lines = [f"Score: {self.score} / {total}"]
         if self.wrong_answers:
             lines.append("")
