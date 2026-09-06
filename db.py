@@ -1,7 +1,27 @@
 import sqlite3
+import sys
 from pathlib import Path
 
-DB_PATH = Path(__file__).parent / "vocab.db"
+
+def _resolve_base_dir():
+    if not getattr(sys, "frozen", False):
+        # 일반 `python main.py` 실행: 스크립트 파일 옆에 저장
+        return Path(__file__).parent
+
+    exe_path = Path(sys.executable).resolve()
+
+    # macOS 앱 번들(.app)로 실행 중이면 Contents/MacOS 안이 아니라
+    # VocabQuiz.app과 같은 위치(그 바깥 폴더)에 저장
+    for parent in exe_path.parents:
+        if parent.suffix == ".app":
+            return parent.parent
+
+    # Windows exe(또는 macOS 콘솔 바이너리): 실행 파일이 있는 폴더
+    return exe_path.parent
+
+
+BASE_DIR = _resolve_base_dir()
+DB_PATH = BASE_DIR / "vocab.db"
 
 
 def get_connection():
